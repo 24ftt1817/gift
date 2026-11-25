@@ -1,0 +1,2101 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>♡ for cayangcuu ♡</title>
+
+<link rel="icon" type="image/svg+xml"
+href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%239333EA' d='M12 21C9 18 1 13 1 7C1 0 9 0 12 6C15 0 23 0 23 7C23 13 15 18 12 21Z'/%3E%3C/svg%3E">
+
+<style>
+    * {
+        box-sizing: border-box;
+    }
+
+    html, body {
+        margin: 0;
+        padding: 0;
+        width: 100%;
+        height: 100%;
+        background: #000;
+        overflow: hidden;
+    }
+
+    canvas {
+        display: block;
+        width: 100%;
+        height: 100%;
+    }
+</style>
+</head>
+
+<body>
+
+<canvas id="art"></canvas>
+
+<script>
+
+// ==========================================
+// 1. ANIMATION SETTINGS
+// ==========================================
+
+const canvas = document.getElementById("art");
+const ctx = canvas.getContext("2d");
+
+const BLOOM_TIME = 15;
+const ROTATION_TIME = 35;
+const CYCLE = 65;
+
+const FLOWER_SIZE = 0.80;
+const LEAF_LENGTH = 1.05;
+const LEAF_COUNT = 6;
+const SPARKLE_COUNT = 24;
+const HEART_THICKNESS = 0.85;
+
+const TAU = Math.PI * 2;
+
+const CHARS =
+    ".,:;ilIrvczXYUJCLQ0OZmwqpdbkhao*#MW&8%B@$";
+
+const points = [];
+
+const clamp = (v, min, max) =>
+    Math.max(min, Math.min(max, v));
+
+const smooth = t => t * t * (3 - 2 * t);
+
+// ==========================================
+// 2. COLOUR PALETTE
+// ==========================================
+
+const palette = {
+
+    // Purple flowers
+
+    deepPurple: [75, 0, 130],
+    darkPurple: [100, 25, 165],
+    royalPurple: [112, 35, 180],
+    violet: [148, 65, 215],
+    purpleHighlight: [190, 130, 245],
+
+    // Deep blue flowers
+
+    midnightBlue: [25, 45, 160],
+    royalBlue: [35, 65, 200],
+    sapphireBlue: [55, 85, 185],
+    blueHighlight: [110, 145, 255],
+
+    // Soft yellow flowers
+
+    softYellow: [255, 235, 155],
+    creamYellow: [255, 248, 205],
+    butterYellow: [245, 220, 130],
+    pastelYellow: [255, 230, 175],
+    yellowHighlight: [255, 252, 225],
+
+    // Daisy centres
+
+    goldenCenter: [225, 175, 65],
+    honeyCenter: [185, 135, 45],
+
+    // Delicate blue blossoms
+
+    powderBlue: [155, 195, 255],
+    skyBlue: [115, 175, 245],
+    periwinkle: [135, 145, 245],
+    iceBlue: [205, 230, 255],
+    blueCenter: [230, 240, 255],
+
+    // Green foliage
+
+    green: [40, 100, 55],
+    darkGreen: [25, 65, 35],
+
+    // Black wrapping paper
+
+    blackWrap: [30, 30, 35],
+    charcoal: [65, 65, 75],
+    paperEdge: [105, 100, 115],
+
+    // Lavender ribbon
+
+    ribbon: [175, 120, 235],
+    ribbonLight: [215, 180, 255]
+
+};
+
+// ==========================================
+// 3. FLOWER ARRANGEMENT
+// ==========================================
+
+// X, Y, Z, Size, Type, Colour
+
+const flowers = [
+
+    // FIVE PURPLE ROSES
+
+    [-0.85, 1.40, 0.70, 0.65, "rose", palette.royalPurple],
+    [0.85, 1.45, 0.70, 0.65, "rose", palette.darkPurple],
+    [0.00, 2.15, 0.00, 0.70, "rose", palette.deepPurple],
+    [-0.90, 1.60, -0.65, 0.62, "rose", palette.violet],
+    [0.90, 1.60, -0.65, 0.62, "rose", palette.royalPurple],
+
+    // THREE SMALL PEONIES
+
+    [0.00, 1.15, 1.05, 0.48, "peony", palette.softYellow],
+    [-1.20, 1.05, 0.10, 0.43, "peony", palette.royalBlue],
+    [0.00, 1.30, -1.10, 0.46, "peony", palette.midnightBlue],
+
+    // THREE TULIPS
+
+    [-0.60, 2.00, 0.45, 0.40, "tulip", palette.royalBlue],
+    [0.65, 2.05, -0.40, 0.40, "tulip", palette.violet],
+    [0.55, 1.85, 0.85, 0.38, "tulip", palette.creamYellow],
+
+    // ONE SMALL HYDRANGEA
+
+    [-0.35, 1.05, -1.20, 0.32, "hydrangea", palette.softYellow],
+
+    // ONE CHRYSANTHEMUM
+
+    [0.65, 1.15, -1.10, 0.32, "chrysanthemum", palette.sapphireBlue],
+
+    // EIGHT SOFT YELLOW DAISIES
+
+    [-1.40, 0.95, 0.40, 0.40, "daisy", palette.creamYellow],
+    [0.70, 0.90, 1.00, 0.43, "daisy", palette.softYellow],
+    [-0.40, 1.65, 1.10, 0.36, "daisy", palette.butterYellow],
+    [0.40, 1.65, -1.10, 0.39, "daisy", palette.pastelYellow],
+    [1.20, 1.05, -0.10, 0.42, "daisy", palette.creamYellow],
+    [-0.50, 1.85, -0.85, 0.35, "daisy", palette.softYellow],
+    [0.15, 2.35, 0.45, 0.32, "daisy", palette.creamYellow],
+    [-1.30, 1.20, -0.35, 0.36, "daisy", palette.butterYellow],
+
+    // FIVE DEEP BLUE DAISIES
+
+    [1.40, 0.95, 0.40, 0.38, "daisy", palette.royalBlue],
+    [-0.65, 0.90, 1.00, 0.40, "daisy", palette.sapphireBlue],
+    [-1.10, 1.80, -0.30, 0.34, "daisy", palette.midnightBlue],
+    [1.10, 1.80, 0.30, 0.36, "daisy", palette.royalBlue],
+    [-1.25, 1.45, 0.50, 0.38, "daisy", palette.sapphireBlue],
+
+    // THREE PURPLE DAISIES
+
+    [1.25, 1.45, -0.50, 0.40, "daisy", palette.violet],
+    [-0.20, 2.10, -0.65, 0.34, "daisy", palette.royalPurple],
+    [0.20, 1.40, 1.20, 0.33, "daisy", palette.darkPurple],
+
+    // THREE SHORT BLUE FLOWER SPRIGS
+
+    [-1.05, 1.65, 0.35, 0.48, "blueFlower", palette.powderBlue],
+    [0.90, 1.75, -0.45, 0.45, "blueFlower", palette.skyBlue],
+    [0.20, 1.85, -0.65, 0.42, "blueFlower", palette.periwinkle]
+
+];
+
+// ==========================================
+// 4. HELPER FUNCTIONS
+// ==========================================
+
+function shade(color, brightness) {
+
+    return color.map(v =>
+        clamp(Math.round(v * brightness), 0, 255)
+    );
+
+}
+
+function mixColor(a, b, t) {
+
+    return a.map((v, i) =>
+        Math.round(v + (b[i] - v) * t)
+    );
+
+}
+
+function isDeepBlue(color) {
+
+    return color === palette.midnightBlue ||
+           color === palette.royalBlue ||
+           color === palette.sapphireBlue;
+
+}
+
+function isSoftYellow(color) {
+
+    return color === palette.softYellow ||
+           color === palette.creamYellow ||
+           color === palette.butterYellow ||
+           color === palette.pastelYellow;
+
+}
+
+function isPurple(color) {
+
+    return color === palette.deepPurple ||
+           color === palette.darkPurple ||
+           color === palette.royalPurple ||
+           color === palette.violet;
+
+}
+
+function add(x, y, z, color, flower = -1) {
+
+    points.push({
+        x,
+        y,
+        z,
+        color,
+        flower,
+        radius: Math.hypot(x, z)
+    });
+
+}
+
+// ==========================================
+// 5. PETAL SHADING
+// ==========================================
+
+function petalShade(color, u, v, brightness) {
+
+    let highlightColor = color;
+
+    if (isDeepBlue(color)) {
+
+        highlightColor = palette.blueHighlight;
+
+    } else if (isSoftYellow(color)) {
+
+        highlightColor = palette.yellowHighlight;
+
+    } else if (isPurple(color)) {
+
+        highlightColor = palette.purpleHighlight;
+
+    }
+
+    let base = smooth(
+        clamp(u / 0.40, 0, 1)
+    );
+
+    let highlight =
+        Math.abs(v) ** 3 * 0.20 +
+        u ** 3 * 0.20;
+
+    let petalColor = mixColor(
+        color,
+        highlightColor,
+        highlight
+    );
+
+    let vein =
+        0.94 +
+        0.06 *
+        Math.abs(Math.sin(v * 15 + u * 5));
+
+    let light =
+        (0.50 + base * 0.55)
+        * vein
+        * brightness;
+
+    return shade(petalColor, light);
+
+}
+
+// ==========================================
+// 6. BLACK WRAPPING PAPER
+// ==========================================
+
+function createWrapping() {
+
+    const layers = 3;
+    const folds = 8;
+
+    for (let layer = 0; layer < layers; layer++) {
+
+        for (let fold = 0; fold < folds; fold++) {
+
+            let baseAngle =
+                fold * TAU / folds + layer * 0.25;
+
+            for (let i = 0; i <= 65; i++) {
+
+                let u = i / 65;
+
+                for (let j = 0; j <= 28; j++) {
+
+                    let v = j / 28 * 2 - 1;
+
+                    let angle =
+                        baseAngle + v * 0.48;
+
+                    let radius =
+                        0.16 +
+                        1.25 * u ** 1.15 +
+                        layer * 0.07 * u;
+
+                    radius +=
+                        Math.sin(v * Math.PI)
+                        * 0.12 * u;
+
+                    let topEdge =
+                        0.38 +
+                        0.55 * (1 - Math.abs(v)) +
+                        0.10 * Math.sin(fold * 2);
+
+                    let y =
+                        -2.45 +
+                        u * (2.45 + topEdge)
+                        - layer * 0.10 * u;
+
+                    let color;
+
+                    if (i > 62 || j < 2 || j > 26) {
+
+                        color = palette.paperEdge;
+
+                    } else {
+
+                        color = shade(
+
+                            layer === 2
+                                ? palette.charcoal
+                                : palette.blackWrap,
+
+                            0.75 +
+                            0.45 * Math.abs(Math.sin(v * 3))
+
+                        );
+
+                    }
+
+                    add(
+                        radius * Math.cos(angle),
+                        y,
+                        radius * Math.sin(angle),
+                        color
+                    );
+
+                }
+            }
+        }
+    }
+}
+
+createWrapping();
+
+// ==========================================
+// 7. LAVENDER RIBBON BAND
+// ==========================================
+
+for (let i = 0; i <= 20; i++) {
+
+    let y = -1.60 + i / 20 * 0.24;
+
+    for (let j = 0; j < 120; j++) {
+
+        let a = j * TAU / 120;
+
+        let r =
+            0.66 +
+            0.04 * Math.sin(Math.PI * i / 20);
+
+        add(
+
+            r * Math.cos(a),
+            y,
+            r * Math.sin(a),
+
+            shade(
+                palette.ribbon,
+                0.75 + 0.25 * Math.sin(a)
+            )
+
+        );
+    }
+}
+
+// ==========================================
+// 8. DECORATIVE RIBBON BOW
+// ==========================================
+
+function createBow() {
+
+    // Bow loops
+
+    for (const side of [-1, 1]) {
+
+        for (let i = 0; i <= 60; i++) {
+
+            let t = i / 60 * TAU;
+
+            for (let j = 0; j <= 16; j++) {
+
+                let v = j / 16 * 2 - 1;
+
+                let x =
+                    side *
+                    (0.12 + 0.32 * (1 - Math.cos(t)));
+
+                let y =
+                    -1.48 +
+                    0.22 * Math.sin(t) +
+                    v * 0.08;
+
+                let z =
+                    0.70 +
+                    0.12 * Math.sin(t) +
+                    v * 0.06;
+
+                add(
+
+                    x, y, z,
+
+                    shade(
+                        palette.ribbonLight,
+                        0.65 +
+                        0.35 * Math.abs(Math.sin(t))
+                    )
+
+                );
+            }
+        }
+    }
+
+    // Ribbon tails
+
+    for (const side of [-1, 1]) {
+
+        for (let i = 0; i <= 45; i++) {
+
+            let u = i / 45;
+
+            for (let j = 0; j <= 15; j++) {
+
+                let v = j / 15 * 2 - 1;
+
+                add(
+
+                    side * (0.12 + 0.25 * u)
+                    + v * 0.09,
+
+                    -1.50 - u * 0.72,
+
+                    0.69 + 0.12 * Math.sin(u * 5),
+
+                    shade(
+                        palette.ribbon,
+                        0.75 + 0.25 * u
+                    )
+
+                );
+            }
+        }
+    }
+
+    // Ribbon centre knot
+
+    for (let i = 0; i <= 20; i++) {
+
+        let a = i / 20 * Math.PI;
+
+        for (let j = 0; j < 40; j++) {
+
+            let b = j / 40 * TAU;
+
+            add(
+
+                0.15 * Math.sin(a) * Math.cos(b),
+
+                -1.48 + 0.12 * Math.cos(a),
+
+                0.76 +
+                0.12 * Math.sin(a) * Math.sin(b),
+
+                palette.ribbonLight
+
+            );
+        }
+    }
+}
+
+createBow();
+
+// ==========================================
+// 9. FLOWER STEMS
+// ==========================================
+
+function createStem(cx, cy, cz) {
+
+    for (let i = 0; i <= 55; i++) {
+
+        let t = i / 55;
+
+        for (let j = 0; j < 8; j++) {
+
+            let a = j * TAU / 8;
+
+            add(
+
+                cx * t ** 1.4 +
+                0.025 * Math.cos(a),
+
+                -1.60 + (cy + 1.60) * t,
+
+                cz * t ** 1.4 +
+                0.025 * Math.sin(a),
+
+                palette.darkGreen
+
+            );
+        }
+    }
+}
+
+// ==========================================
+// 10. LONG GREEN LEAVES
+// ==========================================
+
+function createLeaf(
+    cx, cy, cz, angle,
+    length = LEAF_LENGTH
+) {
+
+    for (let i = 0; i <= 45; i++) {
+
+        let u = i / 45;
+
+        for (let j = 0; j <= 16; j++) {
+
+            let v = j / 16 * 2 - 1;
+
+            let width =
+                0.14 *
+                Math.sin(Math.PI * u) ** 0.8;
+
+            let x = u * length;
+            let z = v * width;
+
+            let y =
+                0.55 * u +
+                0.18 * Math.sin(Math.PI * u)
+                - 0.12 * u ** 3
+                - 0.08 * v * v;
+
+            let color =
+                Math.abs(v) < 0.10
+                ? [100, 165, 90]
+                : [
+                    30 + Math.round(u * 25),
+                    85 + Math.round(u * 65),
+                    40 + Math.round(u * 30)
+                ];
+
+            add(
+
+                cx + x * Math.cos(angle)
+                   - z * Math.sin(angle),
+
+                cy + y,
+
+                cz + x * Math.sin(angle)
+                   + z * Math.cos(angle),
+
+                color
+
+            );
+        }
+    }
+}
+
+// ==========================================
+// 11. BALANCED LEAF DISTRIBUTION
+// ==========================================
+
+function createBalancedLeaves() {
+
+    const radius = 0.85;
+
+    for (let i = 0; i < LEAF_COUNT; i++) {
+
+        const angle =
+            i * TAU / LEAF_COUNT;
+
+        const x =
+            radius * Math.cos(angle);
+
+        const z =
+            radius * Math.sin(angle);
+
+        createLeaf(
+
+            x,
+            0.75,
+            z,
+            angle,
+            LEAF_LENGTH
+
+        );
+
+    }
+}
+
+createBalancedLeaves();
+
+// ==========================================
+// 12. DEEP PURPLE ROSES
+// ==========================================
+
+function createRose(k, color) {
+
+    for (let layer = 0; layer < 4; layer++) {
+
+        let count = 5 + layer * 2;
+
+        let length = 0.30 + layer * 0.19;
+
+        let width = 0.13 + layer * 0.045;
+
+        for (let p = 0; p < count; p++) {
+
+            let angle =
+                p * TAU / count + layer * 0.65;
+
+            for (let i = 0; i <= 22; i++) {
+
+                let u = i / 22;
+
+                for (let j = 0; j <= 16; j++) {
+
+                    let v = j / 16 * 2 - 1;
+
+                    let petalWidth =
+                        width *
+                        Math.sin(Math.PI * u) ** 0.65;
+
+                    let r = 0.04 + length * u;
+
+                    let x =
+                        r * Math.cos(angle) -
+                        v * petalWidth * Math.sin(angle);
+
+                    let z =
+                        r * Math.sin(angle) +
+                        v * petalWidth * Math.cos(angle);
+
+                    let y =
+                        (0.48 - layer * 0.07) *
+                        Math.sin(u * Math.PI / 2)
+                        + 0.12 * v * v * u
+                        - 0.18 * u ** 4;
+
+                    add(
+
+                        x, y, z,
+
+                        petalShade(
+                            color, u, v,
+                            0.45 + 0.55 * u
+                            + 0.25 * Math.abs(v) ** 3
+                        ),
+
+                        k
+
+                    );
+                }
+            }
+        }
+    }
+}
+
+// ==========================================
+// 13. SMALL PEONIES
+// ==========================================
+
+function createPeony(k, color) {
+
+    for (let layer = 0; layer < 4; layer++) {
+
+        let count = 6 + layer * 3;
+
+        let length = 0.25 + layer * 0.20;
+
+        for (let p = 0; p < count; p++) {
+
+            let angle =
+                p * TAU / count + layer * 0.65;
+
+            for (let i = 0; i <= 20; i++) {
+
+                let u = i / 20;
+
+                for (let j = 0; j <= 14; j++) {
+
+                    let v = j / 14 * 2 - 1;
+
+                    let width =
+                        (0.12 + layer * 0.035) *
+                        Math.sin(Math.PI * u) ** 0.6;
+
+                    let r = 0.04 + length * u;
+
+                    let x =
+                        r * Math.cos(angle) -
+                        v * width * Math.sin(angle);
+
+                    let z =
+                        r * Math.sin(angle) +
+                        v * width * Math.cos(angle);
+
+                    let y =
+                        0.32 * Math.sin(Math.PI * u)
+                        + 0.045 * Math.sin(v * 12 + p)
+                        * u ** 3
+                        + 0.10 * v * v
+                        - layer * 0.025;
+
+                    add(
+
+                        x, y, z,
+
+                        petalShade(
+                            color, u, v,
+                            0.50 + u * 0.65
+                            + Math.abs(v) * 0.12
+                        ),
+
+                        k
+
+                    );
+                }
+            }
+        }
+    }
+}
+
+// ==========================================
+// 14. TULIPS
+// ==========================================
+
+function createTulip(k, color) {
+
+    for (let p = 0; p < 6; p++) {
+
+        let angle = p * TAU / 6;
+
+        for (let i = 0; i <= 24; i++) {
+
+            let u = i / 24;
+
+            for (let j = 0; j <= 16; j++) {
+
+                let v = j / 16 * 2 - 1;
+
+                let width =
+                    0.24 *
+                    Math.sin(Math.PI * u) ** 0.65;
+
+                let r = 0.06 + 0.76 * u;
+
+                let x =
+                    r * Math.cos(angle) -
+                    v * width * Math.sin(angle);
+
+                let z =
+                    r * Math.sin(angle) +
+                    v * width * Math.cos(angle);
+
+                let y =
+                    0.80 * Math.sin(u * Math.PI / 2)
+                    - 0.28 * u ** 4
+                    + 0.10 * v * v;
+
+                add(
+
+                    x, y, z,
+
+                    petalShade(
+                        color, u, v,
+                        0.50 + 0.65 * u
+                        + Math.abs(v) * 0.10
+                    ),
+
+                    k
+
+                );
+            }
+        }
+    }
+}
+
+// ==========================================
+// 15. SMALL HYDRANGEA
+// ==========================================
+
+function createHydrangea(k, color) {
+
+    const clusters = 16;
+
+    const goldenAngle =
+        Math.PI * (3 - Math.sqrt(5));
+
+    for (let c = 0; c < clusters; c++) {
+
+        let t = (c + 0.5) / clusters;
+
+        let angle = c * goldenAngle;
+
+        let radius = 0.65 * Math.sqrt(t);
+
+        let cx = radius * Math.cos(angle);
+        let cz = radius * Math.sin(angle);
+
+        let cy = 0.20 + 0.25 * (1 - t);
+
+        for (let p = 0; p < 4; p++) {
+
+            let a = p * TAU / 4 + angle;
+
+            for (let i = 0; i <= 10; i++) {
+
+                let u = i / 10;
+
+                for (let j = 0; j <= 8; j++) {
+
+                    let v = j / 8 * 2 - 1;
+
+                    let r = 0.03 + u * 0.19;
+
+                    let width =
+                        0.075 * Math.sin(Math.PI * u);
+
+                    add(
+
+                        cx + r * Math.cos(a)
+                        - v * width * Math.sin(a),
+
+                        cy + 0.08 * Math.sin(Math.PI * u),
+
+                        cz + r * Math.sin(a)
+                        + v * width * Math.cos(a),
+
+                        petalShade(
+                            color, u, v,
+                            0.65 + 0.45 * u
+                        ),
+
+                        k
+
+                    );
+                }
+            }
+        }
+
+        add(
+            cx, cy + 0.09, cz,
+            shade(color, 0.65),
+            k
+        );
+    }
+}
+
+// ==========================================
+// 16. SMALL CHRYSANTHEMUM
+// ==========================================
+
+function createChrysanthemum(k, color) {
+
+    for (let layer = 0; layer < 4; layer++) {
+
+        let count = 10 + layer * 4;
+
+        let length = 0.25 + layer * 0.20;
+
+        for (let p = 0; p < count; p++) {
+
+            let angle =
+                p * TAU / count + layer * 0.4;
+
+            for (let i = 0; i <= 20; i++) {
+
+                let u = i / 20;
+
+                for (let j = 0; j <= 6; j++) {
+
+                    let v = j / 6 * 2 - 1;
+
+                    let width =
+                        0.065 * Math.sin(Math.PI * u);
+
+                    let r = 0.03 + length * u;
+
+                    let a = angle + u * 0.15;
+
+                    add(
+
+                        r * Math.cos(a)
+                        - v * width * Math.sin(a),
+
+                        0.30 * Math.sin(Math.PI * u)
+                        + 0.16 * u
+                        - layer * 0.035,
+
+                        r * Math.sin(a)
+                        + v * width * Math.cos(a),
+
+                        petalShade(
+                            color, u, v,
+                            0.50 + u * 0.65
+                        ),
+
+                        k
+
+                    );
+                }
+            }
+        }
+    }
+}
+
+// ==========================================
+// 17. LOVELY ROUNDED DAISIES
+// ==========================================
+
+function createDaisy(k, color) {
+
+    const count = 10 + k % 3;
+
+    const offset = k * 0.72;
+
+    for (let p = 0; p < count; p++) {
+
+        let angle =
+            p * TAU / count + offset;
+
+        let length =
+            0.80 +
+            0.06 * Math.sin(p * 2.7 + k);
+
+        for (let i = 0; i <= 28; i++) {
+
+            let u = i / 28;
+
+            for (let j = 0; j <= 18; j++) {
+
+                let v = j / 18 * 2 - 1;
+
+                // Broad rounded petals
+
+                let width =
+                    0.19 *
+                    Math.sin(Math.PI * u) ** 0.45;
+
+                // Keep petals separated
+
+                width = Math.min(
+                    width,
+                    (0.16 + length * u) *
+                    Math.tan(Math.PI / count) * 0.88
+                );
+
+                let r = 0.16 + length * u;
+
+                let a =
+                    angle +
+                    0.04 * Math.sin(Math.PI * u);
+
+                let x =
+                    r * Math.cos(a)
+                    - v * width * Math.sin(a);
+
+                let z =
+                    r * Math.sin(a)
+                    + v * width * Math.cos(a);
+
+                let y =
+                    0.15 * Math.sin(Math.PI * u)
+                    + 0.08 * v * v
+                    - 0.10 * u ** 3
+                    + 0.025 * Math.sin(p * 2) * u;
+
+                let highlightColor;
+
+                if (isSoftYellow(color)) {
+
+                    highlightColor =
+                        palette.yellowHighlight;
+
+                } else if (isDeepBlue(color)) {
+
+                    highlightColor =
+                        palette.blueHighlight;
+
+                } else {
+
+                    highlightColor =
+                        palette.purpleHighlight;
+
+                }
+
+                let tipHighlight =
+                    u ** 2 * 0.25;
+
+                let petalColor = mixColor(
+                    color,
+                    highlightColor,
+                    tipHighlight
+                );
+
+                let edgeShade =
+                    1 - Math.abs(v) ** 5 * 0.32;
+
+                let vein =
+                    0.92 +
+                    0.08 *
+                    Math.abs(Math.sin(v * 14));
+
+                let brightness =
+                    (0.55 + 0.50 * u)
+                    * edgeShade
+                    * vein;
+
+                add(
+
+                    x, y, z,
+
+                    shade(petalColor, brightness),
+
+                    k
+
+                );
+            }
+        }
+    }
+
+    // Textured daisy centre
+
+    const seeds = 240;
+
+    const goldenAngle =
+        Math.PI * (3 - Math.sqrt(5));
+
+    for (let i = 0; i < seeds; i++) {
+
+        let t = i / seeds;
+
+        let r = 0.18 * Math.sqrt(t);
+
+        let a = i * goldenAngle;
+
+        let y =
+            0.10 +
+            0.09 * (1 - t);
+
+        let centerColor;
+
+        if (isSoftYellow(color)) {
+
+            centerColor = mixColor(
+                palette.honeyCenter,
+                palette.goldenCenter,
+                1 - t * 0.6
+            );
+
+        } else if (isDeepBlue(color)) {
+
+            centerColor = mixColor(
+                [35, 45, 110],
+                [130, 155, 240],
+                1 - t
+            );
+
+        } else {
+
+            centerColor = mixColor(
+                [65, 15, 95],
+                [200, 145, 245],
+                1 - t
+            );
+
+        }
+
+        let brightness =
+            0.75 +
+            0.25 * Math.abs(Math.sin(i * 2.3));
+
+        add(
+
+            r * Math.cos(a),
+            y,
+            r * Math.sin(a),
+
+            shade(centerColor, brightness),
+
+            k
+
+        );
+    }
+}
+
+// ==========================================
+// 18. SHORT DELICATE BLUE SPRIGS
+// ==========================================
+
+function createBlueFlower(k, color) {
+
+    const [cx, cy, cz, originalSize] = flowers[k];
+
+    const size = originalSize * FLOWER_SIZE;
+
+    const angle = Math.atan2(cz, cx);
+
+    const tilt = 0.25;
+
+    function transform(x, y, z) {
+
+        x *= size;
+        y *= size;
+        z *= size;
+
+        let tx =
+            x * Math.cos(tilt) +
+            y * Math.sin(tilt);
+
+        let ty =
+            -x * Math.sin(tilt) +
+            y * Math.cos(tilt);
+
+        return [
+
+            cx + tx * Math.cos(angle)
+               - z * Math.sin(angle),
+
+            cy + ty,
+
+            cz + tx * Math.sin(angle)
+               + z * Math.cos(angle)
+
+        ];
+    }
+
+    function addFixed(x, y, z, color) {
+
+        const [fx, fy, fz] =
+            transform(x, y, z);
+
+        add(fx, fy, fz, color);
+
+    }
+
+    // Short central stem
+
+    for (let i = 0; i <= 60; i++) {
+
+        let u = i / 60;
+
+        for (let j = 0; j < 10; j++) {
+
+            let a = j * TAU / 10;
+
+            addFixed(
+
+                0.025 * Math.cos(a),
+
+                u * 0.85,
+
+                0.025 * Math.sin(a),
+
+                palette.green
+
+            );
+        }
+    }
+
+    // Seven delicate flowers per sprig
+
+    for (let c = 0; c < 7; c++) {
+
+        let t = c / 6;
+
+        let branchAngle = c * 2.39996;
+
+        let branchLength =
+            0.38 * (1 - t * 0.60);
+
+        let bx =
+            branchLength * Math.cos(branchAngle);
+
+        let bz =
+            branchLength * Math.sin(branchAngle);
+
+        let by = 0.15 + t * 0.70;
+
+        for (let i = 0; i <= 25; i++) {
+
+            let u = i / 25;
+
+            addFixed(
+
+                bx * u,
+
+                by - 0.15 * (1 - u),
+
+                bz * u,
+
+                palette.green
+
+            );
+        }
+
+        let flowerIndex = flowers.length;
+
+        let [fx, fy, fz] =
+            transform(bx, by, bz);
+
+        let blossomSize =
+            0.20 * (1 - t * 0.30);
+
+        flowers.push([
+
+            fx, fy, fz,
+            blossomSize,
+            "blueBlossom",
+            color
+
+        ]);
+
+        createBluePetals(
+            flowerIndex,
+            color,
+            c * 0.35
+        );
+
+    }
+}
+
+// ==========================================
+// 19. DELICATE FIVE-PETAL BLUE BLOSSOMS
+// ==========================================
+
+function createBluePetals(k, color, offset) {
+
+    for (let p = 0; p < 5; p++) {
+
+        let angle = p * TAU / 5 + offset;
+
+        for (let i = 0; i <= 24; i++) {
+
+            let u = i / 24;
+
+            for (let j = 0; j <= 16; j++) {
+
+                let v = j / 16 * 2 - 1;
+
+                let width =
+                    0.27 *
+                    Math.sin(Math.PI * u) ** 0.65;
+
+                let r = 0.10 + 0.85 * u;
+
+                let x =
+                    r * Math.cos(angle)
+                    - v * width * Math.sin(angle);
+
+                let z =
+                    r * Math.sin(angle)
+                    + v * width * Math.cos(angle);
+
+                let y =
+                    0.13 * Math.sin(Math.PI * u)
+                    + 0.12 * v * v * u
+                    - 0.04 * u ** 3;
+
+                let edge =
+                    Math.abs(v) ** 3 * 0.45
+                    + u * 0.20;
+
+                let petalColor = mixColor(
+                    color,
+                    palette.iceBlue,
+                    edge
+                );
+
+                add(
+
+                    x, y, z,
+
+                    shade(
+                        petalColor,
+                        0.65 + 0.40 * u
+                    ),
+
+                    k
+
+                );
+            }
+        }
+    }
+
+    // Tiny white-blue centre
+
+    for (let i = 0; i <= 8; i++) {
+
+        let r = 0.13 * i / 8;
+
+        for (let j = 0; j < 30; j++) {
+
+            let a = j * TAU / 30;
+
+            add(
+
+                r * Math.cos(a),
+
+                0.10 + 0.05 * (1 - i / 8),
+
+                r * Math.sin(a),
+
+                palette.blueCenter,
+
+                k
+
+            );
+        }
+    }
+}
+
+// ==========================================
+// 20. BUILD COMPLETE BOUQUET
+// ==========================================
+
+const mainFlowers = flowers.slice();
+
+mainFlowers.forEach(
+    ([x, y, z, size, type, color], k) => {
+
+        createStem(x, y, z);
+
+        switch (type) {
+
+            case "rose":
+                createRose(k, color);
+                break;
+
+            case "peony":
+                createPeony(k, color);
+                break;
+
+            case "tulip":
+                createTulip(k, color);
+                break;
+
+            case "hydrangea":
+                createHydrangea(k, color);
+                break;
+
+            case "chrysanthemum":
+                createChrysanthemum(k, color);
+                break;
+
+            case "daisy":
+                createDaisy(k, color);
+                break;
+
+            case "blueFlower":
+                createBlueFlower(k, color);
+                break;
+
+        }
+    }
+);
+
+// ==========================================
+// 21. FLOWER ORIENTATION
+// ==========================================
+
+const orientations = flowers.map(
+    ([x, y, z, size, type], k) => {
+
+        let angle = Math.atan2(z, x);
+
+        let tilt;
+
+        if (type === "blueBlossom") {
+
+            tilt =
+                0.45 +
+                0.40 * Math.abs(Math.sin(k * 2));
+
+        } else if (type === "blueFlower") {
+
+            tilt = 0.25;
+
+        } else if (type === "daisy") {
+
+            tilt = Math.min(
+
+                1.40,
+
+                Math.hypot(x, z) * 1.05
+                + 0.10 * Math.sin(k)
+
+            );
+
+        } else {
+
+            tilt = Math.min(
+                1.30,
+                Math.hypot(x, z) * 0.95
+            );
+
+        }
+
+        return {
+
+            ca: Math.cos(angle),
+            sa: Math.sin(angle),
+
+            ct: Math.cos(tilt),
+            st: Math.sin(tilt)
+
+        };
+
+    }
+);
+
+// ==========================================
+// 22. HOLLOW HEARTS AND SPARKLES
+// ==========================================
+
+const sparkles = [];
+
+for (let i = 0; i < SPARKLE_COUNT; i++) {
+
+    let side = i % 2 === 0 ? -1 : 1;
+
+    sparkles.push({
+
+        // Position beside flower heads
+
+        x: side * (1.85 + Math.random() * 0.50),
+
+        y: 0.70 + Math.random() * 2.30,
+
+        // Small and delicate
+
+        size: 2 + Math.random() * 4,
+
+        speed: 0.8 + Math.random() * 1.5,
+
+        phase: Math.random() * TAU,
+
+        drift: Math.random() * 0.12,
+
+        // Eight hollow hearts and sixteen stars
+
+        type: i % 3 === 0 ? "heart" : "star",
+
+        // Soft romantic colours
+
+        color: [
+            "#E9D5FF",
+            "#FFD1E8",
+            "#D6E8FF",
+            "#FFFFFF",
+            "#FFF3C4"
+        ][i % 5]
+
+    });
+
+}
+
+// ==========================================
+// DRAW SMALL HOLLOW GLOWING HEART
+// ==========================================
+
+function drawHeart(x, y, size) {
+
+    ctx.save();
+
+    // Use the same colour as the sparkle
+
+    ctx.strokeStyle = ctx.fillStyle;
+
+    // Thin, delicate outline
+
+    ctx.lineWidth = HEART_THICKNESS;
+
+    ctx.lineJoin = "round";
+
+    ctx.lineCap = "round";
+
+    ctx.beginPath();
+
+    // Bottom point of the heart
+
+    ctx.moveTo(
+
+        x,
+
+        y + size * 0.85
+
+    );
+
+    // Left half of the heart
+
+    ctx.bezierCurveTo(
+
+        x - size * 2,
+        y - size * 0.35,
+
+        x - size * 0.65,
+        y - size * 1.65,
+
+        x,
+        y - size * 0.55
+
+    );
+
+    // Right half of the heart
+
+    ctx.bezierCurveTo(
+
+        x + size * 0.65,
+        y - size * 1.65,
+
+        x + size * 2,
+        y - size * 0.35,
+
+        x,
+        y + size * 0.85
+
+    );
+
+    ctx.closePath();
+
+    // Outline only.
+    // No fill, leaving the centre transparent.
+
+    ctx.stroke();
+
+    ctx.restore();
+
+}
+
+// ==========================================
+// DRAW FOUR-POINTED SPARKLE
+// ==========================================
+
+function drawStar(x, y, size) {
+
+    ctx.beginPath();
+
+    ctx.moveTo(x, y - size);
+
+    ctx.quadraticCurveTo(
+
+        x + size * 0.18,
+        y - size * 0.18,
+
+        x + size,
+        y
+
+    );
+
+    ctx.quadraticCurveTo(
+
+        x + size * 0.18,
+        y + size * 0.18,
+
+        x,
+        y + size
+
+    );
+
+    ctx.quadraticCurveTo(
+
+        x - size * 0.18,
+        y + size * 0.18,
+
+        x - size,
+        y
+
+    );
+
+    ctx.quadraticCurveTo(
+
+        x - size * 0.18,
+        y - size * 0.18,
+
+        x,
+        y - size
+
+    );
+
+    ctx.closePath();
+
+    ctx.fill();
+
+}
+
+// ==========================================
+// ANIMATE HOLLOW HEARTS AND SPARKLES
+// ==========================================
+
+function drawSparkles(time) {
+
+    ctx.save();
+
+    for (const star of sparkles) {
+
+        // Gentle twinkling
+
+        let pulse =
+            0.5 +
+            0.5 *
+            Math.sin(
+                time * star.speed + star.phase
+            );
+
+        let size =
+            star.size * (0.5 + pulse * 0.8);
+
+        // Slow floating movement
+
+        let x =
+            w / 2 +
+            (
+                star.x +
+                Math.sin(time * 0.7 + star.phase)
+                * star.drift
+            ) * scale;
+
+        let y =
+            h * 0.50 -
+            (
+                star.y +
+                Math.cos(time * 0.5 + star.phase)
+                * 0.12
+            ) * scale;
+
+        // Fade in and out
+
+        ctx.globalAlpha = pulse ** 2;
+
+        ctx.fillStyle = star.color;
+
+        // Soft glowing effect
+
+        ctx.shadowColor = star.color;
+
+        ctx.shadowBlur = 12 * pulse;
+
+        if (star.type === "heart") {
+
+            // Hollow glowing heart
+
+            drawHeart(
+                x,
+                y,
+                size * 0.85
+            );
+
+        } else {
+
+            // Four-pointed sparkle
+
+            drawStar(
+                x,
+                y,
+                size
+            );
+
+        }
+
+    }
+
+    ctx.restore();
+
+}
+
+// ==========================================
+// 23. RESPONSIVE ASCII CANVAS
+// ==========================================
+
+let w, h;
+let cols, rows;
+let cw, ch;
+let scale;
+
+let depths;
+let colors;
+let glyphs;
+
+function resize() {
+
+    w = window.innerWidth;
+    h = window.innerHeight;
+
+    let d = Math.min(
+        window.devicePixelRatio || 1,
+        2
+    );
+
+    canvas.width = Math.round(w * d);
+    canvas.height = Math.round(h * d);
+
+    ctx.setTransform(d, 0, 0, d, 0, 0);
+
+    cw = Math.max(
+        2.5,
+        Math.min(4.5, w / 220)
+    );
+
+    ch = cw * 1.6;
+
+    cols = Math.ceil(w / cw);
+    rows = Math.ceil(h / ch);
+
+    scale = Math.min(
+        w / 6.0,
+        h / 7.2
+    );
+
+    depths = new Float32Array(cols * rows);
+
+    colors = new Array(cols * rows);
+
+    glyphs = new Array(cols * rows);
+
+    ctx.font =
+        `${ch * 0.95}px Consolas, monospace`;
+
+    ctx.textAlign = "center";
+
+    ctx.textBaseline = "middle";
+
+}
+
+resize();
+
+window.addEventListener("resize", resize);
+
+// ==========================================
+// 24. BLOOMING AND ROTATION ENGINE
+// ==========================================
+
+let start = performance.now();
+
+let lastFrame = 0;
+
+// Click anywhere to restart blooming
+
+canvas.addEventListener("click", () => {
+
+    start = performance.now();
+
+});
+
+function frame(now) {
+
+    requestAnimationFrame(frame);
+
+    if (now - lastFrame < 33) return;
+
+    lastFrame = now;
+
+    let time = (now - start) / 1000;
+
+    let phase = time % CYCLE;
+
+    let rotation =
+        time * TAU / ROTATION_TIME;
+
+    let ca = Math.cos(rotation);
+    let sa = Math.sin(rotation);
+
+    depths.fill(-Infinity);
+
+    // ======================================
+    // INDIVIDUAL FLOWER BLOOMING
+    // ======================================
+
+    const transforms = flowers.map(
+        ([cx, cy, cz, originalSize, type], k) => {
+
+            let delay;
+
+            if (type === "blueBlossom") {
+
+                delay = 2 + (k % 7) * 0.40;
+
+            } else if (type === "daisy") {
+
+                delay = 0.5 + (k % 8) * 0.45;
+
+            } else {
+
+                delay = k * 0.20;
+
+            }
+
+            let b = smooth(
+
+                clamp(
+                    (phase - delay) / BLOOM_TIME,
+                    0,
+                    1
+                )
+
+            );
+
+            let size =
+                originalSize * FLOWER_SIZE;
+
+            let budFactor;
+
+            if (type === "blueBlossom") {
+
+                budFactor = 0.65;
+
+            } else if (type === "daisy") {
+
+                budFactor = 1.30;
+
+            } else {
+
+                budFactor = 1.15;
+
+            }
+
+            return {
+
+                cx, cy, cz,
+
+                radialScale:
+                    (0.06 + b * 0.94) * size,
+
+                heightScale:
+                    size * (0.80 + 0.20 * b),
+
+                budHeight:
+                    size * (1 - b) * budFactor,
+
+                orientation: orientations[k]
+
+            };
+
+        }
+    );
+
+    // ======================================
+    // TRANSFORM 3D FLOWER POINTS
+    // ======================================
+
+    for (const point of points) {
+
+        let x = point.x;
+        let y = point.y;
+        let z = point.z;
+
+        let k = point.flower;
+
+        if (k >= 0) {
+
+            let f = transforms[k];
+
+            x *= f.radialScale;
+            z *= f.radialScale;
+
+            y =
+                y * f.heightScale +
+                point.radius * f.budHeight;
+
+            let o = f.orientation;
+
+            let tx =
+                x * o.ct + y * o.st;
+
+            let ty =
+                -x * o.st + y * o.ct;
+
+            let tz = z;
+
+            x =
+                f.cx +
+                tx * o.ca -
+                tz * o.sa;
+
+            y = f.cy + ty;
+
+            z =
+                f.cz +
+                tx * o.sa +
+                tz * o.ca;
+
+        }
+
+        // ==================================
+        // 360-DEGREE ROTATION
+        // ==================================
+
+        let xx =
+            x * ca - z * sa;
+
+        let zz =
+            x * sa + z * ca;
+
+        let yy =
+            y * 0.94 - zz * 0.34;
+
+        let depth =
+            zz * 0.94 + y * 0.34;
+
+        let perspective =
+            8 / (8 - depth);
+
+        let col = Math.floor(
+
+            (w / 2 +
+            xx * scale * perspective) / cw
+
+        );
+
+        let row = Math.floor(
+
+            (h * 0.50 -
+            yy * scale * perspective) / ch
+
+        );
+
+        if (
+
+            col < 0 ||
+            col >= cols ||
+            row < 0 ||
+            row >= rows
+
+        ) continue;
+
+        let index =
+            row * cols + col;
+
+        // ==================================
+        // DEPTH BUFFER
+        // ==================================
+
+        if (depths[index] >= depth) continue;
+
+        depths[index] = depth;
+
+        // ==================================
+        // COLOUR AND LIGHTING
+        // ==================================
+
+        let light = clamp(
+
+            0.95 +
+            depth * 0.13 -
+            xx * 0.08,
+
+            0.45,
+            1.25
+
+        );
+
+        let r = clamp(
+            Math.round(point.color[0] * light),
+            0, 255
+        );
+
+        let g = clamp(
+            Math.round(point.color[1] * light),
+            0, 255
+        );
+
+        let b = clamp(
+            Math.round(point.color[2] * light),
+            0, 255
+        );
+
+        colors[index] =
+            `rgb(${r},${g},${b})`;
+
+        // ==================================
+        // ASCII CHARACTER SHADING
+        // ==================================
+
+        let density = clamp(
+
+            light * 0.65 +
+
+            Math.sin(
+                x * 30 +
+                y * 20 +
+                z * 15
+            ) * 0.15,
+
+            0,
+            1
+
+        );
+
+        glyphs[index] = CHARS[
+
+            Math.floor(
+                density * (CHARS.length - 1)
+            )
+
+        ];
+
+    }
+
+    // ======================================
+    // BLACK BACKGROUND
+    // ======================================
+
+    ctx.fillStyle = "#000000";
+
+    ctx.fillRect(0, 0, w, h);
+
+    // ======================================
+    // DRAW ASCII BOUQUET
+    // ======================================
+
+    for (let i = 0; i < depths.length; i++) {
+
+        if (depths[i] === -Infinity) continue;
+
+        ctx.fillStyle = colors[i];
+
+        ctx.fillText(
+
+            glyphs[i],
+
+            (i % cols + 0.5) * cw,
+
+            (Math.floor(i / cols) + 0.5) * ch
+
+        );
+    }
+
+    // ======================================
+    // DRAW HOLLOW HEARTS AND SPARKLES
+    // ======================================
+
+    drawSparkles(time);
+
+}
+
+// ==========================================
+// 25. START ANIMATION
+// ==========================================
+
+requestAnimationFrame(frame);
+
+</script>
+
+</body>
+</html>
